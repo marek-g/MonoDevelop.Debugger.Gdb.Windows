@@ -77,41 +77,54 @@ namespace MonoDevelop.Debugger.Gdb
 		protected override void OnRun (DebuggerStartInfo startInfo)
 		{
 			lock (gdbLock) {
-				// Create a script to be run in a terminal
-				string script = Path.GetTempFileName ();
-				string ttyfile = Path.GetTempFileName ();
-				string ttyfileDone = ttyfile + "_done";
-				string tty;
-				
-				try {
-					File.WriteAllText (script, "tty > " + ttyfile + "\ntouch " + ttyfileDone + "\nsleep 10000d");
-					Mono.Unix.Native.Syscall.chmod (script, FilePermissions.ALLPERMS);
-					
-					console = Runtime.ProcessService.StartConsoleProcess (script, "", ".", ExternalConsoleFactory.Instance.CreateConsole (true), null);
-					DateTime tim = DateTime.Now;
-					while (!File.Exists (ttyfileDone)) {
-						System.Threading.Thread.Sleep (100);
-						if ((DateTime.Now - tim).TotalSeconds > 10)
-							throw new InvalidOperationException ("Console could not be created.");
-					}
-					tty = File.ReadAllText (ttyfile).Trim (' ','\n');
-				} finally {
-					try {
-						if (File.Exists (script))
-							File.Delete (script);
-						if (File.Exists (ttyfile))
-							File.Delete (ttyfile);
-						if (File.Exists (ttyfileDone))
-							File.Delete (ttyfileDone);
-					} catch {
-						// Ignore
-					}
-				}
+                string tty = string.Empty;
+                if (!Platform.IsWindows)
+                {
+                    // Create a script to be run in a terminal
+                    string script = Path.GetTempFileName();
+                    string ttyfile = Path.GetTempFileName();
+                    string ttyfileDone = ttyfile + "_done";
+
+                    try
+                    {
+                        File.WriteAllText(script, "tty > " + ttyfile + "\ntouch " + ttyfileDone + "\nsleep 10000d");
+                        Mono.Unix.Native.Syscall.chmod(script, FilePermissions.ALLPERMS);
+
+                        console = Runtime.ProcessService.StartConsoleProcess(script, "", ".", ExternalConsoleFactory.Instance.CreateConsole(true), null);
+                        DateTime tim = DateTime.Now;
+                        while (!File.Exists(ttyfileDone))
+                        {
+                            System.Threading.Thread.Sleep(100);
+                            if ((DateTime.Now - tim).TotalSeconds > 10)
+                                throw new InvalidOperationException("Console could not be created.");
+                        }
+                        tty = File.ReadAllText(ttyfile).Trim(' ', '\n');
+                    }
+                    finally
+                    {
+                        try
+                        {
+                            if (File.Exists(script))
+                                File.Delete(script);
+                            if (File.Exists(ttyfile))
+                                File.Delete(ttyfile);
+                            if (File.Exists(ttyfileDone))
+                                File.Delete(ttyfileDone);
+                        }
+                        catch
+                        {
+                            // Ignore
+                        }
+                    }
+                }
 				
 				StartGdb ();
 				
 				// Initialize the terminal
-				RunCommand ("-inferior-tty-set", Escape (tty));
+                if (!Platform.IsWindows)
+                {
+                    RunCommand("-inferior-tty-set", Escape(tty));
+                }
 				
 				try {
 					RunCommand ("-file-exec-and-symbols", Escape (startInfo.Command));
@@ -555,12 +568,18 @@ namespace MonoDevelop.Debugger.Gdb
 		{
 			if (str == null)
 				return null;
-			else if (str.IndexOf (' ') != -1 || str.IndexOf ('"') != -1) {
+
+            if (Platform.IsWindows)
+            {
+                str = str.Replace('\\', '/');
+            }
+			
+            if (str.IndexOf (' ') != -1 || str.IndexOf ('"') != -1)
+            {
 				str = str.Replace ("\"", "\\\"");
 				return "\"" + str + "\"";
 			}
-			else
-				return str;
+            return str;
 		}
 		
 		public GdbCommandResult RunCommand (string command, params string[] args)
