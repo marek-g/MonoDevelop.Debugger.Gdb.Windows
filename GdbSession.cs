@@ -48,7 +48,7 @@ namespace MonoDevelop.Debugger.Gdb
 		StreamWriter sin;
 		IProcessAsyncOperation console;
 		GdbCommandResult lastResult;
-		bool running;
+		bool _running;
 		Thread thread;
 		long currentThread = -1;
 		long activeThread = -1;
@@ -73,20 +73,9 @@ namespace MonoDevelop.Debugger.Gdb
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         private delegate int DebugBreakProcessDelegate(IntPtr processHandle);
 
-	    private IntPtr _kernel32dll;
-        private DebugBreakProcessDelegate _debugBreakProcessFunc;
-
 		public GdbSession ()
 		{
 			logGdb = !string.IsNullOrEmpty (Environment.GetEnvironmentVariable ("MONODEVELOP_GDB_LOG"));
-
-            _kernel32dll = NativeMethods.LoadLibrary(@"kernel32.dll");
-            IntPtr debugBreakProcessFunc = NativeMethods.GetProcAddress(_kernel32dll, "DebugBreakProcess");
-            if (debugBreakProcessFunc != IntPtr.Zero)
-            {
-                _debugBreakProcessFunc = (DebugBreakProcessDelegate)Marshal.GetDelegateForFunctionPointer(
-                    debugBreakProcessFunc, typeof(DebugBreakProcessDelegate));
-            }
 		}
 		
 		protected override void OnRun (DebuggerStartInfo startInfo)
@@ -144,7 +133,8 @@ namespace MonoDevelop.Debugger.Gdb
                 {
                     RunCommand("-inferior-tty-set", Escape(tty));
                 }
-				
+                AttachConsole(proc.Id);
+
 				try {
 					RunCommand ("-file-exec-and-symbols", Escape (startInfo.Command));
 				} catch {
@@ -213,19 +203,16 @@ namespace MonoDevelop.Debugger.Gdb
 			
 			sout = proc.StandardOutput;
 			sin = proc.StandardInput;
-			
-			thread = new Thread (OutputInterpreter);
+
+            thread = new Thread (OutputInterpreter);
 			thread.Name = "GDB output interpeter";
 			thread.IsBackground = true;
 			thread.Start ();
 		}
-		
+	
 		public override void Dispose ()
 		{
-            if (_kernel32dll != null)
-            {
-                NativeMethods.FreeLibrary(_kernel32dll);
-            }
+            DetachConsole();
 
 			if (console != null && !console.IsCompleted) {
 				console.Cancel ();
@@ -621,7 +608,7 @@ namespace MonoDevelop.Debugger.Gdb
 					lastResult = null;
 					
 					lock (eventLock) {
-						running = true;
+						_running = true;
 					}
 					
 					if (logGdb)
@@ -641,7 +628,7 @@ namespace MonoDevelop.Debugger.Gdb
 		bool InternalStop ()
 		{
 			lock (eventLock) {
-				if (!running)
+				if (!_running)
 					return false;
 				internalStop = true;
                 SendSigIntToProcess(proc.Id);
@@ -677,7 +664,7 @@ namespace MonoDevelop.Debugger.Gdb
 				case '^':
 					lock (syncLock) {
 						lastResult = new GdbCommandResult (line);
-						running = (lastResult.Status == CommandStatus.Running);
+						_running = (lastResult.Status == CommandStatus.Running);
 						Monitor.PulseAll (syncLock);
 					}
 					break;
@@ -694,7 +681,7 @@ namespace MonoDevelop.Debugger.Gdb
 				case '*':
 					GdbEvent ev;
 					lock (eventLock) {
-						running = false;
+						_running = false;
 						ev = new GdbEvent (line);
 						string ti = ev.GetValue ("thread-id");
 						if (ti != null && ti != "all")
@@ -787,37 +774,37 @@ namespace MonoDevelop.Debugger.Gdb
         {
             if (Platform.IsWindows)
             {
-                /* // codelite source (debuggergdb.cpp)
-                 * 
-                 * if ( !GetIsRemoteDebugging() && DebugBreakProcessFunc ) {
-                 *     // we have DebugBreakProcess
-                 *     HANDLE process = OpenProcess( PROCESS_ALL_ACCESS, FALSE, ( DWORD )m_debuggeePid );
-                 *     BOOL res = DebugBreakProcessFunc( process );
-                 *     CloseHandle(process);
-                 *     return res == TRUE;
-                 * }
-                 * 
-                 * if ( GetIsRemoteDebugging() ) {
-                 *     // We need to send GDB a Ctrl-C event.  Using DebugBreakProcess just leaves
-                 *     // it unresponsive.
-                 *     return GenerateConsoleCtrlEvent( CTRL_C_EVENT, 0 );
-                 * }
-                 * 
-                 * // on Windows version < XP we need to find a solution for interrupting the
-                 * // debuggee process
-                 * return false;
-                 */
-
-                if (_debugBreakProcessFunc != null)
-                {
-                    IntPtr process = NativeMethods.OpenProcess(ProcessAccessFlags.All, false, pid);
-                    int res = _debugBreakProcessFunc(process);
-                    NativeMethods.CloseHandle(process);
-                }
+                NativeMethods.GenerateConsoleCtrlEvent(CtrlTypes.CTRL_C_EVENT, 0);
             }
             else
             {
                 Syscall.kill(pid, Signum.SIGINT);
+            }
+        }
+
+        private void AttachConsole(int pid)
+        {
+            if (Platform.IsWindows)
+            {
+                if (!NativeMethods.AttachConsole((uint)pid))
+                {
+                    throw new Exception("Unable to attach to gdb console.");
+                }
+
+                // Disable Ctrl-C handling for our program
+                NativeMethods.SetConsoleCtrlHandler(null, true);
+            }
+        }
+
+        private void DetachConsole()
+        {
+            if (Platform.IsWindows)
+            {
+                NativeMethods.FreeConsole();
+
+                // Re-enable Ctrl-C handling or any subsequently started
+                // programs will inherit the disabled state.
+                NativeMethods.SetConsoleCtrlHandler(null, false);
             }
         }
 	}
