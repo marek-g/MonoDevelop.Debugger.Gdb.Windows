@@ -38,24 +38,19 @@
   <ItemGroup>
     <Reference Include="Mono.Addins, Version=0.6.0.0, Culture=neutral, PublicKeyToken=0738eb9f132ed756, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\..\listingi_vala\Vala_workspace\!win64\ValaMonoDevelopPortable\App\MonoDevelop5.6\bin\Mono.Addins.dll</HintPath>
-      <Private>False</Private>
+      <HintPath>dlls\Mono.Addins.dll</HintPath>
     </Reference>
     <Reference Include="Mono.Debugging">
-      <HintPath>..\..\..\listingi_vala\Vala_workspace\!win64\ValaMonoDevelopPortable\App\MonoDevelop5.6\bin\Mono.Debugging.dll</HintPath>
-      <Private>False</Private>
+      <HintPath>dlls\Mono.Debugging.dll</HintPath>
     </Reference>
     <Reference Include="MonoDevelop.Core">
-      <HintPath>..\..\..\listingi_vala\Vala_workspace\!win64\ValaMonoDevelopPortable\App\MonoDevelop5.6\bin\MonoDevelop.Core.dll</HintPath>
-      <Private>False</Private>
+      <HintPath>dlls\MonoDevelop.Core.dll</HintPath>
     </Reference>
     <Reference Include="MonoDevelop.Debugger">
-      <HintPath>..\..\..\listingi_vala\Vala_workspace\!win64\ValaMonoDevelopPortable\App\MonoDevelop5.6\AddIns\MonoDevelop.Debugger\MonoDevelop.Debugger.dll</HintPath>
-      <Private>False</Private>
+      <HintPath>dlls\MonoDevelop.Debugger.dll</HintPath>
     </Reference>
     <Reference Include="MonoDevelop.Ide">
-      <HintPath>..\..\..\listingi_vala\Vala_workspace\!win64\ValaMonoDevelopPortable\App\MonoDevelop5.6\bin\MonoDevelop.Ide.dll</HintPath>
-      <Private>False</Private>
+      <HintPath>dlls\MonoDevelop.Ide.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="Mono.Posix">

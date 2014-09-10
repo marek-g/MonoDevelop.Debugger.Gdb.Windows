@@ -5,6 +5,15 @@ VisualStudioVersion = 12.0.30501.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MonoDevelop.Debugger.Gdb.Windows", "MonoDevelop.Debugger.Gdb.Windows.csproj", "{FA15FC26-A7E7-4932-93B7-65FAE6D5DD33}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "dlls", "dlls", "{5F5D8B02-0EF6-4FEC-B2A7-9CD4AA5845D6}"
+	ProjectSection(SolutionItems) = preProject
+		dlls\Mono.Addins.dll = dlls\Mono.Addins.dll
+		dlls\Mono.Debugging.dll = dlls\Mono.Debugging.dll
+		dlls\MonoDevelop.Core.dll = dlls\MonoDevelop.Core.dll
+		dlls\MonoDevelop.Debugger.dll = dlls\MonoDevelop.Debugger.dll
+		dlls\MonoDevelop.Ide.dll = dlls\MonoDevelop.Ide.dll
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
