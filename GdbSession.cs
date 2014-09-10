@@ -27,6 +27,7 @@
 
 using System;
 using System.Globalization;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.IO;
 using System.Collections;
@@ -68,10 +69,24 @@ namespace MonoDevelop.Debugger.Gdb
 		object syncLock = new object ();
 		object eventLock = new object ();
 		object gdbLock = new object ();
-		
+
+        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+        private delegate int DebugBreakProcessDelegate(IntPtr processHandle);
+
+	    private IntPtr _kernel32dll;
+        private DebugBreakProcessDelegate _debugBreakProcessFunc;
+
 		public GdbSession ()
 		{
 			logGdb = !string.IsNullOrEmpty (Environment.GetEnvironmentVariable ("MONODEVELOP_GDB_LOG"));
+
+            _kernel32dll = NativeMethods.LoadLibrary(@"kernel32.dll");
+            IntPtr debugBreakProcessFunc = NativeMethods.GetProcAddress(_kernel32dll, "DebugBreakProcess");
+            if (debugBreakProcessFunc != IntPtr.Zero)
+            {
+                _debugBreakProcessFunc = (DebugBreakProcessDelegate)Marshal.GetDelegateForFunctionPointer(
+                    debugBreakProcessFunc, typeof(DebugBreakProcessDelegate));
+            }
 		}
 		
 		protected override void OnRun (DebuggerStartInfo startInfo)
@@ -121,7 +136,11 @@ namespace MonoDevelop.Debugger.Gdb
 				StartGdb ();
 				
 				// Initialize the terminal
-                if (!Platform.IsWindows)
+                if (Platform.IsWindows)
+                {
+                    RunCommand("set new-console on");
+                }
+                else
                 {
                     RunCommand("-inferior-tty-set", Escape(tty));
                 }
@@ -203,6 +222,11 @@ namespace MonoDevelop.Debugger.Gdb
 		
 		public override void Dispose ()
 		{
+            if (_kernel32dll != null)
+            {
+                NativeMethods.FreeLibrary(_kernel32dll);
+            }
+
 			if (console != null && !console.IsCompleted) {
 				console.Cancel ();
 				console = null;
@@ -219,7 +243,7 @@ namespace MonoDevelop.Debugger.Gdb
 		
 		protected override void OnStop ()
 		{
-			Syscall.kill (proc.Id, Signum.SIGINT);
+		    SendSigIntToProcess(proc.Id);
 		}
 		
 		protected override void OnDetach ()
@@ -235,7 +259,15 @@ namespace MonoDevelop.Debugger.Gdb
 		{
 			lock (gdbLock) {
 				InternalStop ();
-				RunCommand ("kill");
+			    if (!Platform.IsWindows)
+			    {
+			        RunCommand("kill");
+			    }
+			    else
+			    {
+			        RunCommand("-exec-interrupt --all");
+                    RunCommand("-gdb-exit");
+			    }
 				TargetEventArgs args = new TargetEventArgs (TargetEventType.TargetExited);
 				OnTargetEvent (args);
 /*				proc.Kill ();
@@ -612,7 +644,7 @@ namespace MonoDevelop.Debugger.Gdb
 				if (!running)
 					return false;
 				internalStop = true;
-				Syscall.kill (proc.Id, Signum.SIGINT);
+                SendSigIntToProcess(proc.Id);
 				if (!Monitor.Wait (eventLock, 4000))
 					throw new InvalidOperationException ("Target could not be interrupted.");
 			}
@@ -750,5 +782,43 @@ namespace MonoDevelop.Debugger.Gdb
 				RunCommand ("-var-delete", s);
 			tempVariableObjects.Clear ();
 		}
+
+        private void SendSigIntToProcess(int pid)
+        {
+            if (Platform.IsWindows)
+            {
+                /* // codelite source (debuggergdb.cpp)
+                 * 
+                 * if ( !GetIsRemoteDebugging() && DebugBreakProcessFunc ) {
+                 *     // we have DebugBreakProcess
+                 *     HANDLE process = OpenProcess( PROCESS_ALL_ACCESS, FALSE, ( DWORD )m_debuggeePid );
+                 *     BOOL res = DebugBreakProcessFunc( process );
+                 *     CloseHandle(process);
+                 *     return res == TRUE;
+                 * }
+                 * 
+                 * if ( GetIsRemoteDebugging() ) {
+                 *     // We need to send GDB a Ctrl-C event.  Using DebugBreakProcess just leaves
+                 *     // it unresponsive.
+                 *     return GenerateConsoleCtrlEvent( CTRL_C_EVENT, 0 );
+                 * }
+                 * 
+                 * // on Windows version < XP we need to find a solution for interrupting the
+                 * // debuggee process
+                 * return false;
+                 */
+
+                if (_debugBreakProcessFunc != null)
+                {
+                    IntPtr process = NativeMethods.OpenProcess(ProcessAccessFlags.All, false, pid);
+                    int res = _debugBreakProcessFunc(process);
+                    NativeMethods.CloseHandle(process);
+                }
+            }
+            else
+            {
+                Syscall.kill(pid, Signum.SIGINT);
+            }
+        }
 	}
 }

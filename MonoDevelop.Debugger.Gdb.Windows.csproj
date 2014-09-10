@@ -38,23 +38,23 @@
   <ItemGroup>
     <Reference Include="Mono.Addins, Version=0.6.0.0, Culture=neutral, PublicKeyToken=0738eb9f132ed756, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\..\listingi_vala\!win64\ValaMonoDevelopPortable\App\MonoDevelop5.6\bin\Mono.Addins.dll</HintPath>
+      <HintPath>..\..\..\listingi_vala\Vala_workspace\!win64\ValaMonoDevelopPortable\App\MonoDevelop5.6\bin\Mono.Addins.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="Mono.Debugging">
-      <HintPath>..\..\..\listingi_vala\!win64\ValaMonoDevelopPortable\App\MonoDevelop5.6\bin\Mono.Debugging.dll</HintPath>
+      <HintPath>..\..\..\listingi_vala\Vala_workspace\!win64\ValaMonoDevelopPortable\App\MonoDevelop5.6\bin\Mono.Debugging.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="MonoDevelop.Core">
-      <HintPath>..\..\..\listingi_vala\!win64\ValaMonoDevelopPortable\App\MonoDevelop5.6\bin\MonoDevelop.Core.dll</HintPath>
+      <HintPath>..\..\..\listingi_vala\Vala_workspace\!win64\ValaMonoDevelopPortable\App\MonoDevelop5.6\bin\MonoDevelop.Core.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="MonoDevelop.Debugger">
-      <HintPath>..\..\..\listingi_vala\!win64\ValaMonoDevelopPortable\App\MonoDevelop5.6\AddIns\MonoDevelop.Debugger\MonoDevelop.Debugger.dll</HintPath>
+      <HintPath>..\..\..\listingi_vala\Vala_workspace\!win64\ValaMonoDevelopPortable\App\MonoDevelop5.6\AddIns\MonoDevelop.Debugger\MonoDevelop.Debugger.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="MonoDevelop.Ide">
-      <HintPath>..\..\..\listingi_vala\!win64\ValaMonoDevelopPortable\App\MonoDevelop5.6\bin\MonoDevelop.Ide.dll</HintPath>
+      <HintPath>..\..\..\listingi_vala\Vala_workspace\!win64\ValaMonoDevelopPortable\App\MonoDevelop5.6\bin\MonoDevelop.Ide.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="System" />
@@ -68,6 +68,7 @@
     <Compile Include="GdbSessionFactory.cs" />
     <Compile Include="GdbBacktrace.cs" />
     <Compile Include="CommandStatus.cs" />
+    <Compile Include="NativeMethods.cs" />
     <Compile Include="ResultData.cs" />
     <Compile Include="GdbEvent.cs" />
     <Compile Include="GdbCommandResult.cs" />
