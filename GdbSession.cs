@@ -48,7 +48,7 @@ namespace MonoDevelop.Debugger.Gdb
 		StreamWriter sin;
 		IProcessAsyncOperation console;
 		GdbCommandResult lastResult;
-		bool _running;
+		bool _isRunning;
 		Thread thread;
 		long currentThread = -1;
 		long activeThread = -1;
@@ -608,7 +608,7 @@ namespace MonoDevelop.Debugger.Gdb
 					lastResult = null;
 					
 					lock (eventLock) {
-						_running = true;
+						_isRunning = true;
 					}
 					
 					if (logGdb)
@@ -628,7 +628,7 @@ namespace MonoDevelop.Debugger.Gdb
 		bool InternalStop ()
 		{
 			lock (eventLock) {
-				if (!_running)
+				if (!_isRunning)
 					return false;
 				internalStop = true;
                 SendSigIntToProcess(proc.Id);
@@ -664,7 +664,7 @@ namespace MonoDevelop.Debugger.Gdb
 				case '^':
 					lock (syncLock) {
 						lastResult = new GdbCommandResult (line);
-						_running = (lastResult.Status == CommandStatus.Running);
+						_isRunning = (lastResult.Status == CommandStatus.Running);
 						Monitor.PulseAll (syncLock);
 					}
 					break;
@@ -681,8 +681,8 @@ namespace MonoDevelop.Debugger.Gdb
 				case '*':
 					GdbEvent ev;
 					lock (eventLock) {
-						_running = false;
 						ev = new GdbEvent (line);
+					    _isRunning = (ev.Name == "running");
 						string ti = ev.GetValue ("thread-id");
 						if (ti != null && ti != "all")
 							currentThread = activeThread = int.Parse (ti);
