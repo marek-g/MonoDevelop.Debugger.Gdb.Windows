@@ -1,0 +1,1 @@
+This is GDB plugin for MonoDevelop with all the changes needed to make it running on Windows. Also a few bugs are fixed. It still runs on Linux.
