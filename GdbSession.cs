@@ -641,7 +641,10 @@ namespace MonoDevelop.Debugger.Gdb
 		void InternalResume (bool resume)
 		{
 			if (resume)
-				RunCommand ("-exec-continue");
+			{
+                SelectThread(activeThread);
+                RunCommand("-exec-continue");
+			}
 		}
 
 		void OutputInterpreter ()
@@ -763,11 +766,27 @@ namespace MonoDevelop.Debugger.Gdb
 			tempVariableObjects.Add (var);
 		}
 		
-		void CleanTempVariableObjects ()
+		void CleanTempVariableObjects()
 		{
-			foreach (string s in tempVariableObjects)
-				RunCommand ("-var-delete", s);
-			tempVariableObjects.Clear ();
+		    var tempVariablesCopy = tempVariableObjects.ToArray();
+            tempVariableObjects.Clear();
+
+            foreach (string s in tempVariablesCopy)
+		    {
+		        try
+		        {
+                    RunCommand("-var-delete", s);
+		        }
+		        catch (Exception ex)
+		        {
+		            if (ex.Message == "Variable object not found")
+		            {
+                        continue;
+		            }
+
+		            throw;
+		        }
+		    }
 		}
 
         private void SendSigIntToProcess(int pid)
